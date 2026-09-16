@@ -1,7 +1,7 @@
 import '../../models/recitation_error.dart';
 import '../../models/recitation_result.dart';
-import 'ai_engine.dart';
 import '../recitation/recitation_matcher.dart';
+import 'ai_engine.dart';
 
 class RecitationEngine {
   final AiEngine aiEngine;
@@ -22,21 +22,37 @@ class RecitationEngine {
       audioData: audioData,
     );
 
-    if (result.recognizedText == null ||
-        result.recognizedText!.trim().isEmpty) {
+    final recognizedText = result.recognizedText?.trim();
+
+    if (recognizedText == null || recognizedText.isEmpty) {
       return RecitationResult(
         status: RecitationStatus.processing,
         surahNumber: surahNumber,
         ayahNumber: ayahNumber,
         expectedText: expectedText,
         confidence: result.confidence,
+        errorMessage: 'لم يتم التعرف على التلاوة بوضوح.',
       );
     }
 
     final errors = matcher.compare(
       expectedText: expectedText,
-      recognizedText: result.recognizedText!,
+      recognizedText: recognizedText,
     );
+
+    final isReliable = result.confidence >= 0.60;
+
+    if (!isReliable) {
+      return RecitationResult(
+        status: RecitationStatus.processing,
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
+        recognizedText: recognizedText,
+        expectedText: expectedText,
+        confidence: result.confidence,
+        errorMessage: 'جودة التعرف غير كافية للحكم على التلاوة.',
+      );
+    }
 
     return RecitationResult(
       status: errors.isEmpty
@@ -44,12 +60,10 @@ class RecitationEngine {
           : RecitationStatus.mistake,
       surahNumber: surahNumber,
       ayahNumber: ayahNumber,
-      recognizedText: result.recognizedText,
+      recognizedText: recognizedText,
       expectedText: expectedText,
       confidence: result.confidence,
-      errorMessage: errors.isEmpty
-          ? null
-          : _buildErrorMessage(errors),
+      errorMessage: errors.isEmpty ? null : _buildErrorMessage(errors),
     );
   }
 
@@ -58,6 +72,6 @@ class RecitationEngine {
       return errors.first.message;
     }
 
-    return 'تم اكتشاف ${errors.length} مواضع تحتاج إلى مراجعة';
+    return 'تم اكتشاف ${errors.length} مواضع تحتاج إلى مراجعة.';
   }
 }

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/ayah.dart';
+import '../../../models/recitation_result.dart';
 import '../../../services/recitation/recitation_session_state.dart';
 import '../controllers/recitation_controller_factory.dart';
 import '../controllers/recitation_session_controller.dart';
-import '../widgets/recitation_action_button.dart';
 import '../widgets/recitation_session_actions.dart';
 import '../widgets/recitation_session_panel.dart';
 import '../widgets/recitation_status_view.dart';
@@ -60,6 +61,41 @@ class _RecitationScreenState extends State<RecitationScreen> {
     _controller.start(widget.ayah);
   }
 
+  RecitationResult _buildStatusResult() {
+    final currentAyah = _controller.currentAyah;
+
+    if (currentAyah == null) {
+      return const RecitationResult(
+        status: RecitationStatus.idle,
+      );
+    }
+
+    final status = _controller.state;
+
+    final recitationStatus = switch (status) {
+      RecitationSessionState.idle =>
+        RecitationStatus.idle,
+      RecitationSessionState.preparing =>
+        RecitationStatus.processing,
+      RecitationSessionState.listening =>
+        RecitationStatus.listening,
+      RecitationSessionState.analyzing =>
+        RecitationStatus.processing,
+      RecitationSessionState.completed =>
+        RecitationStatus.completed,
+      RecitationSessionState.error =>
+        RecitationStatus.mistake,
+    };
+
+    return RecitationResult(
+      status: recitationStatus,
+      surahNumber: currentAyah.surahNumber,
+      ayahNumber: currentAyah.ayahNumber,
+      expectedText: currentAyah.text,
+      confidence: 0.0,
+    );
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
@@ -72,8 +108,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
     final state = _controller.state;
     final isListening =
         state == RecitationSessionState.listening;
-
-    final statusResult = _buildStatusResult();
 
     return Scaffold(
       appBar: AppBar(
@@ -118,7 +152,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       RecitationStatusView(
-                        result: statusResult,
+                        result: _buildStatusResult(),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       RecitationSessionPanel(
@@ -145,37 +179,6 @@ class _RecitationScreenState extends State<RecitationScreen> {
       ),
     );
   }
-
-  dynamic _buildStatusResult() {
-    final current = _controller.currentAyah;
-
-    if (current == null) {
-      return const RecitationStatusView(
-        result: null,
-      );
-    }
-
-    return _StatusResult(
-      state: _controller.state,
-      surahNumber: current.surahNumber,
-      ayahNumber: current.ayahNumber,
-      expectedText: current.text,
-    );
-  }
-}
-
-class _StatusResult {
-  final RecitationSessionState state;
-  final int surahNumber;
-  final int ayahNumber;
-  final String expectedText;
-
-  const _StatusResult({
-    required this.state,
-    required this.surahNumber,
-    required this.ayahNumber,
-    required this.expectedText,
-  });
 }
 
 class _AyahCard extends StatelessWidget {
@@ -199,7 +202,7 @@ class _AyahCard extends StatelessWidget {
         color: isActive
             ? AppColors.emerald.withValues(alpha: 0.14)
             : AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: isActive
               ? AppColors.gold.withValues(alpha: 0.45)

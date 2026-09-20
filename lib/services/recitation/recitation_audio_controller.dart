@@ -1,9 +1,13 @@
 import '../../models/recitation_result.dart';
-import 'recitation_audio_factory.dart';
-import 'recitation_audio_pipeline.dart';
+import '../ai/mock_ai_engine.dart';
+import '../ai/recitation_engine.dart';
+import 'recitation_audio_processor.dart';
+import 'recitation_audio_session.dart';
 
 class RecitationAudioController {
-  final RecitationAudioPipeline pipeline;
+  final RecitationAudioSession session;
+  final RecitationAudioProcessor processor;
+  final RecitationEngine engine;
 
   RecitationResult _result = const RecitationResult(
     status: RecitationStatus.idle,
@@ -12,38 +16,44 @@ class RecitationAudioController {
   bool _isProcessing = false;
 
   RecitationAudioController({
-    RecitationAudioPipeline? pipeline,
-  }) : pipeline =
-            pipeline ?? RecitationAudioFactory.createMockPipeline();
+    RecitationAudioSession? session,
+    RecitationAudioProcessor? processor,
+    RecitationEngine? engine,
+  })  : session = session ?? RecitationAudioSession(),
+        processor = processor ?? const RecitationAudioProcessor(),
+        engine = engine ??
+            RecitationEngine(
+              aiEngine: MockAiEngine(),
+            );
 
   RecitationResult get result => _result;
 
-  bool get isActive => pipeline.audioController.isActive;
+  bool get isActive => session.isActive;
 
   bool get isRecording => isActive;
 
   bool get isProcessing => _isProcessing;
 
-  Duration get duration => pipeline.audioController.duration;
+  Duration get duration => session.duration;
 
   void start() {
     if (isActive || _isProcessing) {
       return;
     }
 
+    session.start();
+
     _result = const RecitationResult(
       status: RecitationStatus.listening,
     );
-
-    pipeline.start();
   }
 
   void addAudio(List<int> audioData) {
-    if (!isActive || _isProcessing) {
+    if (!isActive || _isProcessing || audioData.isEmpty) {
       return;
     }
 
-    pipeline.addAudio(audioData);
+    session.addAudio(audioData);
   }
 
   Future<void> stop({
@@ -65,7 +75,34 @@ class RecitationAudioController {
     );
 
     try {
-      _result = await pipeline.stopAndProcess(
+      final audioResult = session.finish();
+
+      if (audioResult == null) {
+        _result = RecitationResult(
+          status: RecitationStatus.processing,
+          surahNumber: surahNumber,
+          ayahNumber: ayahNumber,
+          expectedText: expectedText,
+          errorMessage: 'لم يتم تسجيل صوت صالح للتحليل.',
+        );
+        return;
+      }
+
+      final preparedAudio = processor.prepare(audioResult);
+
+      if (preparedAudio.isEmpty) {
+        _result = RecitationResult(
+          status: RecitationStatus.processing,
+          surahNumber: surahNumber,
+          ayahNumber: ayahNumber,
+          expectedText: expectedText,
+          errorMessage: 'التسجيل الصوتي غير صالح للتحليل.',
+        );
+        return;
+      }
+
+      _result = await engine.process(
+        audioData: preparedAudio,
         expectedText: expectedText,
         surahNumber: surahNumber,
         ayahNumber: ayahNumber,
@@ -76,7 +113,7 @@ class RecitationAudioController {
         surahNumber: surahNumber,
         ayahNumber: ayahNumber,
         expectedText: expectedText,
-        errorMessage: 'حدث خطأ أثناء تحليل التسجيل.',
+        errorMessage: 'حدث خطأ أثناء معالجة التسجيل الصوتي.',
       );
     } finally {
       _isProcessing = false;
@@ -84,7 +121,7 @@ class RecitationAudioController {
   }
 
   void cancel() {
-    pipeline.cancel();
+    session.cancel();
     _isProcessing = false;
 
     _result = const RecitationResult(
@@ -97,6 +134,6 @@ class RecitationAudioController {
   }
 
   void dispose() {
-    pipeline.cancel();
+    session.cancel();
   }
 }

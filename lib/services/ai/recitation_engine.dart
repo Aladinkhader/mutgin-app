@@ -52,6 +52,11 @@ class RecitationEngine {
       recognizedText: recognizedText,
     );
 
+    final accuracy = analyzer.calculateAccuracy(
+      expectedText: expectedText,
+      recognizedText: recognizedText,
+    );
+
     return RecitationResult(
       status: errors.isEmpty
           ? RecitationStatus.correct
@@ -63,15 +68,24 @@ class RecitationEngine {
       confidence: result.confidence,
       errorMessage: errors.isEmpty
           ? null
-          : _buildErrorMessage(errors),
+          : _buildErrorMessage(
+              errors,
+              accuracy,
+            ),
     );
   }
 
-  String _buildErrorMessage(List<RecitationError> errors) {
+  String _buildErrorMessage(
+    List<RecitationError> errors,
+    double accuracy,
+  ) {
+    final percentage = (accuracy * 100).round();
+
     if (errors.length == 1) {
-      return errors.first.message;
+      return '${errors.first.message} الدقة: $percentage٪';
     }
 
-    return 'تم اكتشاف ${errors.length} مواضع تحتاج إلى مراجعة.';
+    return 'تم اكتشاف ${errors.length} مواضع تحتاج إلى مراجعة. '
+        'الدقة: $percentage٪';
   }
 }

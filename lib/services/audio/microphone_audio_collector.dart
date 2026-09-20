@@ -5,20 +5,16 @@ class MicrophoneAudioCollector {
 
   StreamSubscription<List<int>>? _subscription;
 
-  void Function(List<int> audioData)? _onAudio;
-
   MicrophoneAudioCollector({
     required this.audioStream,
   });
 
   bool get isListening => _subscription != null;
 
-  void start(void Function(List<int> audioData) onAudio) {
-    if (isListening) {
-      return;
-    }
-
-    _onAudio = onAudio;
+  void start(
+    void Function(List<int> audioData) onAudio,
+  ) {
+    _subscription?.cancel();
 
     _subscription = audioStream.listen(
       (audioData) {
@@ -26,15 +22,15 @@ class MicrophoneAudioCollector {
           return;
         }
 
-        _onAudio?.call(audioData);
+        onAudio(audioData);
       },
+      onError: (_) {},
     );
   }
 
   Future<void> stop() async {
     await _subscription?.cancel();
     _subscription = null;
-    _onAudio = null;
   }
 
   Future<void> dispose() async {

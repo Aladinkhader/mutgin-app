@@ -1,10 +1,10 @@
-import 'mock_ai_engine.dart';
 import 'recitation_engine.dart';
+import 'whisper/whisper_engine.dart';
 
 abstract final class RecitationEngineFactory {
-  static RecitationEngine createMock() {
+  static RecitationEngine create() {
     return RecitationEngine(
-      aiEngine: MockAiEngine(),
+      aiEngine: WhisperEngine(),
     );
   }
 }

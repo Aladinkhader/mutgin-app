@@ -55,14 +55,24 @@ class _RecitationScreenState extends State<RecitationScreen> {
       return;
     }
 
-    setState(() {
-      final currentAyah = _audioController.currentAyah;
+    final currentAyah = _audioController.currentAyah;
 
-      if (currentAyah != null &&
-          currentAyah != _sessionController.currentAyah) {
-        _sessionController.start(currentAyah);
-      }
-    });
+    if (currentAyah != null &&
+        currentAyah != _sessionController.currentAyah) {
+      _sessionController.start(currentAyah);
+    }
+
+    final audioResult = _audioController.result;
+
+    if (audioResult.recognizedText != null &&
+        audioResult.recognizedText!.trim().isNotEmpty &&
+        audioResult.status != RecitationStatus.idle &&
+        audioResult.status != RecitationStatus.listening &&
+        audioResult.status != RecitationStatus.processing) {
+      _sessionController.updateFromResult(audioResult);
+    }
+
+    setState(() {});
   }
 
   Future<void> _startListening() async {
@@ -74,6 +84,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
     }
 
     _sessionController.startListening();
+
     await _audioController.start();
   }
 

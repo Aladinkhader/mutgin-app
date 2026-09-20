@@ -1,66 +1,90 @@
-import 'package:flutter/foundation.dart';
-
 import '../../models/ayah.dart';
+import '../../models/recitation_result.dart';
 import 'recitation_position.dart';
-import 'recitation_position_manager.dart';
+import 'recitation_position_service.dart';
+import 'recitation_position_state.dart';
+import 'recitation_position_state_manager.dart';
 
-class RecitationPositionController extends ChangeNotifier {
-  final RecitationPositionManager manager;
+class RecitationPositionCoordinator {
+  final RecitationPositionService positionService;
+  final RecitationPositionStateManager stateManager;
 
-  RecitationPositionController({
-    RecitationPositionManager? manager,
-  }) : manager = manager ?? RecitationPositionManager();
+  RecitationPositionCoordinator({
+    RecitationPositionService? positionService,
+    RecitationPositionStateManager? stateManager,
+  })  : positionService =
+            positionService ?? RecitationPositionService(),
+        stateManager =
+            stateManager ?? RecitationPositionStateManager();
 
-  RecitationPosition? get position => manager.position;
+  RecitationPosition? get position => stateManager.position;
 
-  bool get hasPosition => manager.hasPosition;
+  RecitationPositionState get state => stateManager.state;
 
-  void start(Ayah ayah) {
-    manager.start(ayah);
-    notifyListeners();
-  }
+  bool get hasPosition => stateManager.hasPosition;
 
-  void startAt({
-    required int surahNumber,
-    required int ayahNumber,
+  void start(
+    Ayah ayah, {
     int? pageNumber,
     int? juzNumber,
   }) {
-    manager.startAt(
+    final position = RecitationPosition(
+      surahNumber: ayah.surahNumber,
+      ayahNumber: ayah.ayahNumber,
+      pageNumber: pageNumber,
+      juzNumber: juzNumber,
+    );
+
+    positionService.reset();
+    stateManager.setPosition(position);
+  }
+
+  void updateFromResult(RecitationResult result) {
+    final surahNumber = result.surahNumber;
+    final ayahNumber = result.ayahNumber;
+
+    if (surahNumber == null || ayahNumber == null) {
+      return;
+    }
+
+    final position = RecitationPosition(
       surahNumber: surahNumber,
       ayahNumber: ayahNumber,
-      pageNumber: pageNumber,
-      juzNumber: juzNumber,
     );
 
-    notifyListeners();
+    stateManager.setPosition(position);
   }
 
-  void moveToNextAyah() {
-    manager.moveToNextAyah();
-    notifyListeners();
+  bool canAdvance(RecitationResult result) {
+    return result.status == RecitationStatus.correct &&
+        result.surahNumber != null &&
+        result.ayahNumber != null;
   }
 
-  void moveToAyah(
-    int ayahNumber, {
-    int? pageNumber,
-    int? juzNumber,
-  }) {
-    manager.moveToAyah(
-      ayahNumber,
-      pageNumber: pageNumber,
-      juzNumber: juzNumber,
+  void advanceAfterCorrect(RecitationResult result) {
+    if (!canAdvance(result)) {
+      return;
+    }
+
+    final surahNumber = result.surahNumber!;
+    final ayahNumber = result.ayahNumber!;
+
+    stateManager.startAdvancing();
+
+    stateManager.setPosition(
+      RecitationPosition(
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber + 1,
+      ),
     );
-
-    notifyListeners();
   }
 
-  bool isCurrentAyah(Ayah ayah) {
-    return manager.isCurrentAyah(ayah);
+  void complete() {
+    stateManager.complete();
   }
 
   void reset() {
-    manager.reset();
-    notifyListeners();
+    positionService.reset();
+    stateManager.reset();
   }
 }

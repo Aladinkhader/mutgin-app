@@ -14,6 +14,7 @@ class RecitationResult {
   final String? recognizedText;
   final String? expectedText;
   final double confidence;
+  final double accuracy;
   final String? errorMessage;
 
   const RecitationResult({
@@ -23,6 +24,7 @@ class RecitationResult {
     this.recognizedText,
     this.expectedText,
     this.confidence = 0.0,
+    this.accuracy = 0.0,
     this.errorMessage,
   });
 
@@ -33,4 +35,6 @@ class RecitationResult {
   bool get isListening => status == RecitationStatus.listening;
 
   bool get isCompleted => status == RecitationStatus.completed;
+
+  int get accuracyPercentage => (accuracy * 100).round();
 }

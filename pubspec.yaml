@@ -15,6 +15,7 @@ dependencies:
   permission_handler: ^13.0.2
   path_provider: ^2.1.5
   whisper_ggml: ^2.6.0
+  quran_data_dart: ^1.7.1
 
 dev_dependencies:
   flutter_test:

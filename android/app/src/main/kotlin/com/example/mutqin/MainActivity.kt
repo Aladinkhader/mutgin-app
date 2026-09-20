@@ -52,11 +52,13 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
 
             when (call.method) {
-
                 "requestPermission" -> {
-                    result.success(
-                        hasMicrophonePermission()
-                    )
+                    if (hasMicrophonePermission()) {
+                        result.success(true)
+                    } else {
+                        requestMicrophonePermission()
+                        result.success(false)
+                    }
                 }
 
                 "startRecording" -> {
@@ -144,7 +146,6 @@ class MainActivity : FlutterActivity() {
                 "تعذر إعداد الميكروفون.",
                 null
             )
-
             return
         }
 
@@ -175,13 +176,27 @@ class MainActivity : FlutterActivity() {
                     "تعذر تهيئة الميكروفون.",
                     null
                 )
+                return
+            }
 
+            audioRecord?.startRecording()
+
+            if (
+                audioRecord?.recordingState !=
+                AudioRecord.RECORDSTATE_RECORDING
+            ) {
+                audioRecord?.release()
+                audioRecord = null
+
+                result.error(
+                    "AUDIO_RECORDING_ERROR",
+                    "تعذر بدء التقاط الصوت.",
+                    null
+                )
                 return
             }
 
             isRecording = true
-
-            audioRecord?.startRecording()
 
             thread(
                 start = true,
@@ -193,10 +208,13 @@ class MainActivity : FlutterActivity() {
             result.success(null)
 
         } catch (error: Exception) {
-
             isRecording = false
 
-            audioRecord?.release()
+            try {
+                audioRecord?.release()
+            } catch (_: Exception) {
+            }
+
             audioRecord = null
 
             result.error(
@@ -213,7 +231,6 @@ class MainActivity : FlutterActivity() {
         val buffer = ByteArray(bufferSize)
 
         while (isRecording) {
-
             val record = audioRecord ?: break
 
             val bytesRead = try {
@@ -227,8 +244,7 @@ class MainActivity : FlutterActivity() {
             }
 
             if (bytesRead > 0) {
-                val data =
-                    buffer.copyOf(bytesRead)
+                val data = buffer.copyOf(bytesRead)
 
                 runOnUiThread {
                     if (isRecording) {
@@ -244,27 +260,4 @@ class MainActivity : FlutterActivity() {
 
         try {
             audioRecord?.stop()
-        } catch (_: Exception) {
-        }
-
-        audioRecord?.release()
-        audioRecord = null
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        )
-    }
-
-    override fun onDestroy() {
-        stopRecording()
-        super.onDestroy()
-    }
-}
+        } catch (_: Exception

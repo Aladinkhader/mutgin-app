@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:whisper_ggml/whisper_ggml.dart';
 
-import '../../models/recitation_result.dart';
+import '../../../models/recitation_result.dart';
 import '../ai_engine.dart';
 import 'whisper_model_config.dart';
 import 'whisper_model_downloader.dart';
@@ -87,8 +87,7 @@ class WhisperEngine implements AiEngine {
 
       final session = await _controller!.transcribeLive(
         modelPath: _modelPath!,
-        pcm16Stream:
-            Stream<Uint8List>.value(pcmBytes),
+        pcm16Stream: Stream<Uint8List>.value(pcmBytes),
         lang: 'ar',
         initialPrompt:
             'القرآن الكريم، تلاوة عربية فصيحة، آيات القرآن الكريم.',
@@ -115,8 +114,7 @@ class WhisperEngine implements AiEngine {
       return RecitationResult(
         status: RecitationStatus.processing,
         confidence: 0.0,
-        errorMessage:
-            'تعذر تشغيل محرك Whisper: $error',
+        errorMessage: 'تعذر تشغيل محرك Whisper: $error',
       );
     }
   }

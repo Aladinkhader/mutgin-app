@@ -31,6 +31,7 @@ class RecitationEngine {
         ayahNumber: ayahNumber,
         expectedText: expectedText,
         confidence: result.confidence,
+        accuracy: 0.0,
         errorMessage: 'لم يتم التعرف على التلاوة بوضوح.',
       );
     }
@@ -43,6 +44,7 @@ class RecitationEngine {
         recognizedText: recognizedText,
         expectedText: expectedText,
         confidence: result.confidence,
+        accuracy: 0.0,
         errorMessage: 'جودة التعرف غير كافية للحكم على التلاوة.',
       );
     }
@@ -66,6 +68,7 @@ class RecitationEngine {
       recognizedText: recognizedText,
       expectedText: expectedText,
       confidence: result.confidence,
+      accuracy: accuracy,
       errorMessage: errors.isEmpty
           ? null
           : _buildErrorMessage(

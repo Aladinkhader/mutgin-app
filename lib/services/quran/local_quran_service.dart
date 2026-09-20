@@ -1,4 +1,4 @@
-import 'package:quran_data_dart/quran.dart';
+import 'package:quran_data_dart/quran.dart' as quran_data;
 
 import '../../models/ayah.dart';
 import '../../models/surah.dart';
@@ -14,7 +14,7 @@ class LocalQuranService implements QuranService {
       return;
     }
 
-    await QuranService.initialize();
+    await quran_data.QuranService.initialize();
     _initialized = true;
   }
 
@@ -22,7 +22,7 @@ class LocalQuranService implements QuranService {
   Future<List<Surah>> getSurahs() async {
     await _ensureInitialized();
 
-    final data = await QuranService.getQuranData();
+    final data = await quran_data.QuranService.getQuranData();
 
     return data.surahs.map((surah) {
       return Surah(
@@ -30,9 +30,8 @@ class LocalQuranService implements QuranService {
         name: surah.englishName,
         arabicName: surah.name,
         numberOfAyahs: surah.numberOfAyahs,
-        revelationType: surah.revelationType == 'Meccan'
-            ? 'مكية'
-            : 'مدنية',
+        revelationType:
+            surah.revelationType == 'Meccan' ? 'مكية' : 'مدنية',
       );
     }).toList(growable: false);
   }
@@ -41,7 +40,8 @@ class LocalQuranService implements QuranService {
   Future<List<Ayah>> getSurahAyahs(int surahNumber) async {
     await _ensureInitialized();
 
-    final surah = await QuranService.getSurah(surahNumber);
+    final surah =
+        await quran_data.QuranService.getSurah(surahNumber);
 
     return surah.ayat.map((ayah) {
       return Ayah(
@@ -60,7 +60,7 @@ class LocalQuranService implements QuranService {
   }) async {
     await _ensureInitialized();
 
-    final ayah = await QuranService.getAyah(
+    final ayah = await quran_data.QuranService.getAyah(
       surahNumber,
       ayahNumber,
     );

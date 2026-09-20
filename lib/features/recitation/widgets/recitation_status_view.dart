@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/recitation_result.dart';
@@ -15,41 +16,51 @@ class RecitationStatusView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = _statusData(result.status);
+    final info = _StatusInfo.fromStatus(result.status);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: AppSpacing.cardPadding,
+      duration: const Duration(milliseconds: 250),
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(20),
+        color: info.backgroundColor,
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: status.color.withValues(alpha: 0.25),
+          color: info.borderColor,
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            status.icon,
-            color: status.color,
-            size: 24,
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: info.iconColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              info.icon,
+              color: info.iconColor,
+              size: 22,
+            ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  status.title,
-                  style: AppTextStyles.subtitle,
-                ),
-                if (result.errorMessage != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    result.errorMessage!,
-                    style: AppTextStyles.bodySecondary,
+                  info.title,
+                  style: AppTextStyles.subtitle.copyWith(
+                    fontSize: 15,
                   ),
-                ],
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  result.errorMessage ?? info.subtitle,
+                  style: AppTextStyles.caption,
+                ),
               ],
             ),
           ),
@@ -62,62 +73,86 @@ class RecitationStatusView extends StatelessWidget {
       ),
     );
   }
+}
 
-  _StatusData _statusData(RecitationStatus status) {
+class _StatusInfo {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+  final Color backgroundColor;
+  final Color borderColor;
+
+  const _StatusInfo({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
+
+  factory _StatusInfo.fromStatus(RecitationStatus status) {
     switch (status) {
       case RecitationStatus.listening:
-        return const _StatusData(
-          title: 'استمع للتلاوة',
+        return const _StatusInfo(
+          title: 'جاري الاستماع',
+          subtitle: 'متقن يستمع إلى تلاوتك...',
           icon: Icons.mic_rounded,
-          color: AppColors.emerald,
+          iconColor: AppColors.gold,
+          backgroundColor: AppColors.surfaceElevated,
+          borderColor: Color(0x44D6B56A),
         );
 
       case RecitationStatus.processing:
-        return const _StatusData(
-          title: 'جارٍ تحليل التلاوة',
+        return const _StatusInfo(
+          title: 'جاري التحليل',
+          subtitle: 'يتم تحليل التلاوة...',
           icon: Icons.auto_awesome_rounded,
-          color: AppColors.gold,
+          iconColor: AppColors.emerald,
+          backgroundColor: AppColors.surfaceElevated,
+          borderColor: Color(0x441D6B5C),
         );
 
       case RecitationStatus.correct:
-        return const _StatusData(
+        return const _StatusInfo(
           title: 'تلاوة صحيحة',
+          subtitle: 'أحسنت، لم يتم اكتشاف أخطاء.',
           icon: Icons.check_circle_rounded,
-          color: AppColors.success,
+          iconColor: AppColors.success,
+          backgroundColor: AppColors.surfaceElevated,
+          borderColor: Color(0x4455C99A),
         );
 
       case RecitationStatus.mistake:
-        return const _StatusData(
+        return const _StatusInfo(
           title: 'تحتاج إلى مراجعة',
-          icon: Icons.error_rounded,
-          color: AppColors.error,
+          subtitle: 'تم اكتشاف مواضع تحتاج إلى مراجعة.',
+          icon: Icons.info_rounded,
+          iconColor: AppColors.error,
+          backgroundColor: AppColors.surfaceElevated,
+          borderColor: Color(0x44E97979),
         );
 
       case RecitationStatus.completed:
-        return const _StatusData(
-          title: 'تم إكمال الآية',
-          icon: Icons.verified_rounded,
-          color: AppColors.success,
+        return const _StatusInfo(
+          title: 'اكتملت التلاوة',
+          subtitle: 'أحسنت، اكتملت جلسة التسميع.',
+          icon: Icons.task_alt_rounded,
+          iconColor: AppColors.success,
+          backgroundColor: AppColors.surfaceElevated,
+          borderColor: Color(0x4455C99A),
         );
 
       case RecitationStatus.idle:
-        return const _StatusData(
+        return const _StatusInfo(
           title: 'جاهز للتسميع',
-          icon: Icons.play_circle_outline_rounded,
-          color: AppColors.textSecondary,
+          subtitle: 'ابدأ التسميع عندما تكون مستعداً.',
+          icon: Icons.mic_none_rounded,
+          iconColor: AppColors.textSecondary,
+          backgroundColor: AppColors.surfaceElevated,
+          borderColor: AppColors.surfaceSoft,
         );
     }
   }
-}
-
-class _StatusData {
-  final String title;
-  final IconData icon;
-  final Color color;
-
-  const _StatusData({
-    required this.title,
-    required this.icon,
-    required this.color,
-  });
 }

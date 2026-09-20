@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/ayah.dart';
+import '../../../models/recitation_result.dart';
 import '../widgets/ayah_recitation_card.dart';
 import '../widgets/recitation_action_button.dart';
 import '../widgets/recitation_status_view.dart';
@@ -23,6 +23,17 @@ class RecitationScreen extends StatefulWidget {
 class _RecitationScreenState extends State<RecitationScreen> {
   bool _isListening = false;
   bool _showText = true;
+
+  RecitationResult get _statusResult {
+    return RecitationResult(
+      status: _isListening
+          ? RecitationStatus.listening
+          : RecitationStatus.idle,
+      surahNumber: widget.ayah.surahNumber,
+      ayahNumber: widget.ayah.ayahNumber,
+      expectedText: widget.ayah.text,
+    );
+  }
 
   void _toggleListening() {
     setState(() {
@@ -71,8 +82,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
                         showText: _showText,
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      const RecitationStatusView(
-                        result: RecitationStatusViewPlaceholder.result,
+                      RecitationStatusView(
+                        result: _statusResult,
                       ),
                     ],
                   ),
@@ -98,15 +109,4 @@ class _RecitationScreenState extends State<RecitationScreen> {
       ),
     );
   }
-}
-
-class RecitationStatusViewPlaceholder {
-  static const result = _PlaceholderResult();
-}
-
-class _PlaceholderResult extends RecitationResult {
-  const _PlaceholderResult()
-      : super(
-          status: RecitationStatus.idle,
-        );
 }

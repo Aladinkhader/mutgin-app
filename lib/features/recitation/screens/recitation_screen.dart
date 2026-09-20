@@ -32,6 +32,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
   late final RecitationScreenController _audioController;
 
   bool _showText = true;
+  String _lastSyncedResult = '';
 
   @override
   void initState() {
@@ -60,16 +61,27 @@ class _RecitationScreenState extends State<RecitationScreen> {
     if (currentAyah != null &&
         currentAyah != _sessionController.currentAyah) {
       _sessionController.start(currentAyah);
+      _lastSyncedResult = '';
     }
 
     final audioResult = _audioController.result;
+    final recognizedText = audioResult.recognizedText?.trim();
 
-    if (audioResult.recognizedText != null &&
-        audioResult.recognizedText!.trim().isNotEmpty &&
+    if (recognizedText != null &&
+        recognizedText.isNotEmpty &&
         audioResult.status != RecitationStatus.idle &&
         audioResult.status != RecitationStatus.listening &&
         audioResult.status != RecitationStatus.processing) {
-      _sessionController.updateFromResult(audioResult);
+      final resultKey =
+          '${audioResult.status.name}|${audioResult.surahNumber}|'
+          '${audioResult.ayahNumber}|$recognizedText|'
+          '${audioResult.confidence}';
+
+      if (resultKey != _lastSyncedResult) {
+        _lastSyncedResult = resultKey;
+        _sessionController.updateFromResult(audioResult);
+        return;
+      }
     }
 
     setState(() {});
@@ -81,6 +93,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
 
     if (_sessionController.currentAyah != currentAyah) {
       _sessionController.start(currentAyah);
+      _lastSyncedResult = '';
     }
 
     _sessionController.startListening();
@@ -100,6 +113,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
     if (currentAyah != null &&
         currentAyah != _sessionController.currentAyah) {
       _sessionController.start(currentAyah);
+      _lastSyncedResult = '';
     }
   }
 
@@ -110,6 +124,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
 
     final currentAyah =
         _audioController.currentAyah ?? widget.ayah;
+
+    _lastSyncedResult = '';
 
     _audioController.setAyah(currentAyah);
     _sessionController.start(currentAyah);

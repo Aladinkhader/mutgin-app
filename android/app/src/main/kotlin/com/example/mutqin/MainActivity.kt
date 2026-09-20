@@ -260,4 +260,31 @@ class MainActivity : FlutterActivity() {
 
         try {
             audioRecord?.stop()
-        } catch (_: Exception
+        } catch (_: Exception) {
+        }
+
+        try {
+            audioRecord?.release()
+        } catch (_: Exception) {
+        }
+
+        audioRecord = null
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults
+        )
+    }
+
+    override fun onDestroy() {
+        stopRecording()
+        super.onDestroy()
+    }
+}

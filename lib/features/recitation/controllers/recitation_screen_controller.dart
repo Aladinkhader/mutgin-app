@@ -2,12 +2,13 @@ import 'package:flutter/foundation.dart';
 
 import '../../../models/ayah.dart';
 import '../../../models/recitation_result.dart';
-import '../../../services/ai/recitation_engine_factory.dart';
 import '../../../services/recitation/recitation_audio_controller.dart';
-import 'recitation_audio_controller_factory.dart';
+import '../controllers/microphone_recitation_controller_factory.dart';
+import 'microphone_recitation_controller.dart';
 
 class RecitationScreenController extends ChangeNotifier {
   final RecitationAudioController audioController;
+  final MicrophoneRecitationController microphoneController;
 
   Ayah? _currentAyah;
   RecitationResult _result = const RecitationResult(
@@ -16,58 +17,92 @@ class RecitationScreenController extends ChangeNotifier {
 
   RecitationScreenController({
     RecitationAudioController? audioController,
-  }) : audioController =
-            audioController ??
-            RecitationAudioControllerFactory.create();
+    MicrophoneRecitationController? microphoneController,
+  })  : audioController = audioController ?? RecitationAudioController(),
+        microphoneController = microphoneController ??
+            MicrophoneRecitationControllerFactory.create();
 
   Ayah? get currentAyah => _currentAyah;
 
   RecitationResult get result => _result;
 
-  bool get isRecording => audioController.isRecording;
+  bool get isRecording => audioController.isActive;
 
   bool get isProcessing => audioController.isProcessing;
 
-  void setAyah(Ayah ayah) {
-    if (_currentAyah?.number == ayah.number) {
-      return;
-    }
+  bool get isMicrophoneListening =>
+      microphoneController.isListening;
 
+  String? get microphoneError =>
+      microphoneController.errorMessage;
+
+  void setAyah(Ayah ayah) {
     _currentAyah = ayah;
-    _result = const RecitationResult(
+
+    _result = RecitationResult(
       status: RecitationStatus.idle,
+      surahNumber: ayah.surahNumber,
+      ayahNumber: ayah.ayahNumber,
+      expectedText: ayah.text,
     );
 
     notifyListeners();
   }
 
-  void start() {
-    if (_currentAyah == null) {
+  Future<void> start() async {
+    final ayah = _currentAyah;
+
+    if (ayah == null || isRecording || isProcessing) {
+      return;
+    }
+
+    final started = await microphoneController.start();
+
+    if (!started) {
+      _result = RecitationResult(
+        status: RecitationStatus.processing,
+        surahNumber: ayah.surahNumber,
+        ayahNumber: ayah.ayahNumber,
+        expectedText: ayah.text,
+        errorMessage:
+            microphoneController.errorMessage ??
+            'تعذر الوصول إلى الميكروفون.',
+      );
+      notifyListeners();
       return;
     }
 
     audioController.start();
 
+    microphoneController.bridge.listen(addAudio);
+
     _result = RecitationResult(
       status: RecitationStatus.listening,
-      surahNumber: _currentAyah!.surahNumber,
-      ayahNumber: _currentAyah!.ayahNumber,
-      expectedText: _currentAyah!.text,
+      surahNumber: ayah.surahNumber,
+      ayahNumber: ayah.ayahNumber,
+      expectedText: ayah.text,
     );
 
     notifyListeners();
   }
 
   void addAudio(List<int> audioData) {
+    if (!isRecording || audioData.isEmpty) {
+      return;
+    }
+
     audioController.addAudio(audioData);
   }
 
   Future<void> stop() async {
     final ayah = _currentAyah;
 
-    if (ayah == null || !isRecording) {
+    if (ayah == null || !isRecording || isProcessing) {
       return;
     }
+
+    await microphoneController.stop();
+    await microphoneController.bridge.cancelListening();
 
     await audioController.stop(
       expectedText: ayah.text,
@@ -76,25 +111,26 @@ class RecitationScreenController extends ChangeNotifier {
     );
 
     _result = audioController.result;
+
     notifyListeners();
   }
 
-  void cancel() {
+  Future<void> cancel() async {
+    await microphoneController.cancel();
+    await microphoneController.bridge.cancelListening();
+
     audioController.cancel();
+
+    final ayah = _currentAyah;
 
     _result = RecitationResult(
       status: RecitationStatus.idle,
-      surahNumber: _currentAyah?.surahNumber,
-      ayahNumber: _currentAyah?.ayahNumber,
-      expectedText: _currentAyah?.text,
+      surahNumber: ayah?.surahNumber,
+      ayahNumber: ayah?.ayahNumber,
+      expectedText: ayah?.text,
     );
 
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    audioController.dispose();
-    super.dispose();
-  }
-}
+ 

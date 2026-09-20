@@ -7,9 +7,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/ayah.dart';
 import '../../../models/recitation_result.dart';
 import '../../../services/recitation/recitation_session_state.dart';
-import '../controllers/recitation_screen_controller.dart';
 import '../controllers/recitation_controller_factory.dart';
-import '../controllers/recitation_session_controller.dart';
+import '../controllers/recitation_screen_controller.dart';
+import '../controllers/recitation_screen_controller_factory.dart';
 import '../widgets/recitation_audio_section.dart';
 import '../widgets/recitation_session_actions.dart';
 import '../widgets/recitation_session_panel.dart';
@@ -40,7 +40,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
     _sessionController =
         RecitationControllerFactory.createSessionController();
 
-    _audioController = RecitationScreenController();
+    _audioController =
+        RecitationScreenControllerFactory.create();
 
     _sessionController.addListener(_onChanged);
     _audioController.addListener(_onChanged);
@@ -55,15 +56,17 @@ class _RecitationScreenState extends State<RecitationScreen> {
     }
   }
 
-  void _startListening() {
+  Future<void> _startListening() async {
     _sessionController.startListening();
-    _audioController.start();
+    await _audioController.start();
   }
 
   Future<void> _stopListening() async {
     await _audioController.stop();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     final result = _audioController.result;
 
@@ -76,8 +79,9 @@ class _RecitationScreenState extends State<RecitationScreen> {
     _sessionController.start(widget.ayah);
   }
 
-  void _resetSession() {
-    _audioController.cancel();
+  Future<void> _resetSession() async {
+    await _audioController.cancel();
+
     _sessionController.reset();
     _sessionController.start(widget.ayah);
   }
@@ -91,21 +95,26 @@ class _RecitationScreenState extends State<RecitationScreen> {
       );
     }
 
-    final result = _audioController.result;
+    final audioResult = _audioController.result;
 
-    if (result.status != RecitationStatus.idle) {
-      return result;
+    if (audioResult.status != RecitationStatus.idle) {
+      return audioResult;
     }
 
     final status = _sessionController.state;
 
     final recitationStatus = switch (status) {
       RecitationSessionState.idle => RecitationStatus.idle,
-      RecitationSessionState.preparing => RecitationStatus.processing,
-      RecitationSessionState.listening => RecitationStatus.listening,
-      RecitationSessionState.analyzing => RecitationStatus.processing,
-      RecitationSessionState.completed => RecitationStatus.completed,
-      RecitationSessionState.error => RecitationStatus.mistake,
+      RecitationSessionState.preparing =>
+        RecitationStatus.processing,
+      RecitationSessionState.listening =>
+        RecitationStatus.listening,
+      RecitationSessionState.analyzing =>
+        RecitationStatus.processing,
+      RecitationSessionState.completed =>
+        RecitationStatus.completed,
+      RecitationSessionState.error =>
+        RecitationStatus.mistake,
     };
 
     return RecitationResult(
@@ -131,9 +140,12 @@ class _RecitationScreenState extends State<RecitationScreen> {
   @override
   Widget build(BuildContext context) {
     final state = _sessionController.state;
+
     final isListening =
         state == RecitationSessionState.listening ||
         _audioController.isRecording;
+
+    final position = _audioController.position;
 
     return Scaffold(
       appBar: AppBar(
@@ -162,18 +174,30 @@ class _RecitationScreenState extends State<RecitationScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'الآية ${widget.ayah.ayahNumber}',
+                        position == null
+                            ? 'الآية ${widget.ayah.ayahNumber}'
+                            : 'الآية ${position.ayahNumber}',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.title,
                       ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (position != null)
+                        Text(
+                          'السورة ${position.surahNumber}',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.caption,
+                        ),
                       const SizedBox(height: AppSpacing.lg),
                       _AyahCard(
                         ayah: widget.ayah,
                         isActive: isListening,
                         showText: _showText,
+                        positionAyahNumber:
+                            position?.ayahNumber,
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       RecitationStatusView(
@@ -185,9 +209,11 @@ class _RecitationScreenState extends State<RecitationScreen> {
                       ),
                       const SizedBox(height: AppSpacing.md),
                       RecitationSessionPanel(
-                        currentAyah: _sessionController.currentAyah,
+                        currentAyah:
+                            _sessionController.currentAyah,
                         state: state,
-                        accuracy: _sessionController.accuracy,
+                        accuracy:
+                            _sessionController.accuracy,
                         errors: _sessionController.errors,
                       ),
                     ],
@@ -214,26 +240,31 @@ class _AyahCard extends StatelessWidget {
   final Ayah ayah;
   final bool isActive;
   final bool showText;
+  final int? positionAyahNumber;
 
   const _AyahCard({
     required this.ayah,
     required this.isActive,
     required this.showText,
+    required this.positionAyahNumber,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isPositioned =
+        positionAyahNumber == ayah.ayahNumber;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: isActive
+        color: isActive || isPositioned
             ? AppColors.emerald.withValues(alpha: 0.14)
             : AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: isActive
+          color: isActive || isPositioned
               ? AppColors.gold.withValues(alpha: 0.45)
               : AppColors.surfaceSoft,
         ),
@@ -249,13 +280,15 @@ class _AyahCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Text(
-              '${ayah.ayahNumber}',
+              '${positionAyahNumber ?? ayah.ayahNumber}',
               style: AppTextStyles.gold,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            showText ? ayah.text : 'أكمل التسميع من حفظك',
+            showText
+                ? ayah.text
+                : 'أكمل التسميع من حفظك',
             textDirection: TextDirection.rtl,
             textAlign: TextAlign.center,
             style: AppTextStyles.body.copyWith(

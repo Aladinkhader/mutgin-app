@@ -20,6 +20,10 @@ class MicrophoneAudioPacketPipeline {
     int channelCount = 1,
     int bytesPerSample = 2,
   }) {
+    if (audioData.isEmpty) {
+      return false;
+    }
+
     final packet = converter.convert(
       audioData,
       sampleRate: sampleRate,
@@ -42,6 +46,12 @@ class MicrophoneAudioPacketPipeline {
   List<int> snapshot() {
     return buffer.snapshot();
   }
+
+  int get length => buffer.length;
+
+  bool get isEmpty => buffer.isEmpty;
+
+  bool get isNotEmpty => buffer.isNotEmpty;
 
   void clear() {
     buffer.clear();

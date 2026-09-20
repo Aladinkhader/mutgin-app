@@ -53,34 +53,40 @@ class MicrophoneAudioService implements AudioService {
     }
 
     try {
-      _nativeSubscription?.cancel();
+      await _nativeSubscription?.cancel();
 
       _nativeSubscription = _eventChannel
           .receiveBroadcastStream()
           .listen(
         _handleNativeAudio,
         onError: (Object error) {
-          _audioController.addError(error);
+          if (!_audioController.isClosed) {
+            _audioController.addError(error);
+          }
         },
       );
+
+      // Mark listening before starting the native recorder.
+      // This prevents the first audio packets from being ignored.
+      _isListening = true;
 
       await _methodChannel.invokeMethod<void>(
         'startRecording',
       );
-
-      _isListening = true;
     } on PlatformException catch (error) {
+      _isListening = false;
+
       await _nativeSubscription?.cancel();
       _nativeSubscription = null;
-      _isListening = false;
 
       throw StateError(
         error.message ?? 'تعذر بدء تسجيل الصوت.',
       );
     } catch (error) {
+      _isListening = false;
+
       await _nativeSubscription?.cancel();
       _nativeSubscription = null;
-      _isListening = false;
 
       throw StateError(
         error.toString(),
@@ -94,6 +100,8 @@ class MicrophoneAudioService implements AudioService {
       return;
     }
 
+    _isListening = false;
+
     try {
       await _methodChannel.invokeMethod<void>(
         'stopRecording',
@@ -101,7 +109,6 @@ class MicrophoneAudioService implements AudioService {
     } finally {
       await _nativeSubscription?.cancel();
       _nativeSubscription = null;
-      _isListening = false;
     }
   }
 
@@ -141,6 +148,8 @@ class MicrophoneAudioService implements AudioService {
     await _nativeSubscription?.cancel();
     _nativeSubscription = null;
 
-    await _audioController.close();
+    if (!_audioController.isClosed) {
+      await _audioController.close();
+    }
   }
 }

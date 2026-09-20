@@ -1,6 +1,6 @@
 import '../../models/recitation_result.dart';
-import '../ai/mock_ai_engine.dart';
 import '../ai/recitation_engine.dart';
+import '../ai/whisper/whisper_engine.dart';
 import 'recitation_audio_processor.dart';
 import 'recitation_audio_session.dart';
 
@@ -23,7 +23,7 @@ class RecitationAudioController {
         processor = processor ?? const RecitationAudioProcessor(),
         engine = engine ??
             RecitationEngine(
-              aiEngine: MockAiEngine(),
+              aiEngine: WhisperEngine(),
             );
 
   RecitationResult get result => _result;

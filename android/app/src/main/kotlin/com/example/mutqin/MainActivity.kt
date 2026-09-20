@@ -41,6 +41,8 @@ class MainActivity : FlutterActivity() {
 
     private var eventSink: EventChannel.EventSink? = null
 
+    private var pendingPermissionResult: MethodChannel.Result? = null
+
     override fun configureFlutterEngine(
         flutterEngine: FlutterEngine
     ) {
@@ -52,13 +54,9 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
 
             when (call.method) {
+
                 "requestPermission" -> {
-                    if (hasMicrophonePermission()) {
-                        result.success(true)
-                    } else {
-                        requestMicrophonePermission()
-                        result.success(false)
-                    }
+                    requestMicrophonePermission(result)
                 }
 
                 "startRecording" -> {
@@ -105,7 +103,25 @@ class MainActivity : FlutterActivity() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun requestMicrophonePermission() {
+    private fun requestMicrophonePermission(
+        result: MethodChannel.Result
+    ) {
+        if (hasMicrophonePermission()) {
+            result.success(true)
+            return
+        }
+
+        if (pendingPermissionResult != null) {
+            result.error(
+                "PERMISSION_REQUEST_IN_PROGRESS",
+                "طلب صلاحية الميكروفون قيد التنفيذ.",
+                null
+            )
+            return
+        }
+
+        pendingPermissionResult = result
+
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.RECORD_AUDIO),
@@ -117,14 +133,11 @@ class MainActivity : FlutterActivity() {
         result: MethodChannel.Result
     ) {
         if (!hasMicrophonePermission()) {
-            requestMicrophonePermission()
-
             result.error(
                 "PERMISSION_REQUIRED",
                 "يجب السماح للتطبيق باستخدام الميكروفون.",
                 null
             )
-
             return
         }
 
@@ -281,10 +294,31 @@ class MainActivity : FlutterActivity() {
             permissions,
             grantResults
         )
+
+        if (requestCode != REQUEST_RECORD_AUDIO) {
+            return
+        }
+
+        val result = pendingPermissionResult
+        pendingPermissionResult = null
+
+        if (result == null) {
+            return
+        }
+
+        val granted =
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+
+        result.success(granted)
     }
 
     override fun onDestroy() {
+        pendingPermissionResult?.success(false)
+        pendingPermissionResult = null
+
         stopRecording()
+
         super.onDestroy()
     }
 }

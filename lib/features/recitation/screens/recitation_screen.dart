@@ -7,8 +7,10 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../models/ayah.dart';
 import '../../../models/recitation_result.dart';
 import '../../../services/recitation/recitation_session_state.dart';
+import '../controllers/recitation_screen_controller.dart';
 import '../controllers/recitation_controller_factory.dart';
 import '../controllers/recitation_session_controller.dart';
+import '../widgets/recitation_audio_section.dart';
 import '../widgets/recitation_session_actions.dart';
 import '../widgets/recitation_session_panel.dart';
 import '../widgets/recitation_status_view.dart';
@@ -26,7 +28,8 @@ class RecitationScreen extends StatefulWidget {
 }
 
 class _RecitationScreenState extends State<RecitationScreen> {
-  late final RecitationSessionController _controller;
+  late final RecitationSessionController _sessionController;
+  late final RecitationScreenController _audioController;
 
   bool _showText = true;
 
@@ -34,35 +37,53 @@ class _RecitationScreenState extends State<RecitationScreen> {
   void initState() {
     super.initState();
 
-    _controller =
+    _sessionController =
         RecitationControllerFactory.createSessionController();
 
-    _controller.addListener(_onControllerChanged);
-    _controller.start(widget.ayah);
+    _audioController = RecitationScreenController();
+
+    _sessionController.addListener(_onChanged);
+    _audioController.addListener(_onChanged);
+
+    _sessionController.start(widget.ayah);
+    _audioController.setAyah(widget.ayah);
   }
 
-  void _onControllerChanged() {
+  void _onChanged() {
     if (mounted) {
       setState(() {});
     }
   }
 
   void _startListening() {
-    _controller.startListening();
+    _sessionController.startListening();
+    _audioController.start();
   }
 
-  void _stopListening() {
-    _controller.reset();
-    _controller.start(widget.ayah);
+  Future<void> _stopListening() async {
+    await _audioController.stop();
+
+    if (!mounted) return;
+
+    final result = _audioController.result;
+
+    if (result.status == RecitationStatus.correct ||
+        result.status == RecitationStatus.mistake) {
+      return;
+    }
+
+    _sessionController.reset();
+    _sessionController.start(widget.ayah);
   }
 
   void _resetSession() {
-    _controller.reset();
-    _controller.start(widget.ayah);
+    _audioController.cancel();
+    _sessionController.reset();
+    _sessionController.start(widget.ayah);
   }
 
   RecitationResult _buildStatusResult() {
-    final currentAyah = _controller.currentAyah;
+    final currentAyah = _sessionController.currentAyah;
 
     if (currentAyah == null) {
       return const RecitationResult(
@@ -70,21 +91,21 @@ class _RecitationScreenState extends State<RecitationScreen> {
       );
     }
 
-    final status = _controller.state;
+    final result = _audioController.result;
+
+    if (result.status != RecitationStatus.idle) {
+      return result;
+    }
+
+    final status = _sessionController.state;
 
     final recitationStatus = switch (status) {
-      RecitationSessionState.idle =>
-        RecitationStatus.idle,
-      RecitationSessionState.preparing =>
-        RecitationStatus.processing,
-      RecitationSessionState.listening =>
-        RecitationStatus.listening,
-      RecitationSessionState.analyzing =>
-        RecitationStatus.processing,
-      RecitationSessionState.completed =>
-        RecitationStatus.completed,
-      RecitationSessionState.error =>
-        RecitationStatus.mistake,
+      RecitationSessionState.idle => RecitationStatus.idle,
+      RecitationSessionState.preparing => RecitationStatus.processing,
+      RecitationSessionState.listening => RecitationStatus.listening,
+      RecitationSessionState.analyzing => RecitationStatus.processing,
+      RecitationSessionState.completed => RecitationStatus.completed,
+      RecitationSessionState.error => RecitationStatus.mistake,
     };
 
     return RecitationResult(
@@ -98,16 +119,21 @@ class _RecitationScreenState extends State<RecitationScreen> {
 
   @override
   void dispose() {
-    _controller.removeListener(_onControllerChanged);
-    _controller.dispose();
+    _sessionController.removeListener(_onChanged);
+    _audioController.removeListener(_onChanged);
+
+    _sessionController.dispose();
+    _audioController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = _controller.state;
+    final state = _sessionController.state;
     final isListening =
-        state == RecitationSessionState.listening;
+        state == RecitationSessionState.listening ||
+        _audioController.isRecording;
 
     return Scaffold(
       appBar: AppBar(
@@ -136,8 +162,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
                         'الآية ${widget.ayah.ayahNumber}',
@@ -155,11 +180,15 @@ class _RecitationScreenState extends State<RecitationScreen> {
                         result: _buildStatusResult(),
                       ),
                       const SizedBox(height: AppSpacing.md),
+                      RecitationScreenAudioSection(
+                        controller: _audioController,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
                       RecitationSessionPanel(
-                        currentAyah: _controller.currentAyah,
+                        currentAyah: _sessionController.currentAyah,
                         state: state,
-                        accuracy: _controller.accuracy,
-                        errors: _controller.errors,
+                        accuracy: _sessionController.accuracy,
+                        errors: _sessionController.errors,
                       ),
                     ],
                   ),

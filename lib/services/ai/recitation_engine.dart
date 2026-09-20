@@ -1,15 +1,15 @@
 import '../../models/recitation_error.dart';
 import '../../models/recitation_result.dart';
-import '../recitation/recitation_matcher.dart';
+import '../recitation/recitation_analyzer.dart';
 import 'ai_engine.dart';
 
 class RecitationEngine {
   final AiEngine aiEngine;
-  final RecitationMatcher matcher;
+  final RecitationAnalyzer analyzer;
 
   const RecitationEngine({
     required this.aiEngine,
-    this.matcher = const RecitationMatcher(),
+    this.analyzer = const RecitationAnalyzer(),
   });
 
   Future<RecitationResult> process({
@@ -35,14 +35,7 @@ class RecitationEngine {
       );
     }
 
-    final errors = matcher.compare(
-      expectedText: expectedText,
-      recognizedText: recognizedText,
-    );
-
-    final isReliable = result.confidence >= 0.60;
-
-    if (!isReliable) {
+    if (result.confidence < 0.60) {
       return RecitationResult(
         status: RecitationStatus.processing,
         surahNumber: surahNumber,
@@ -54,6 +47,11 @@ class RecitationEngine {
       );
     }
 
+    final errors = analyzer.analyze(
+      expectedText: expectedText,
+      recognizedText: recognizedText,
+    );
+
     return RecitationResult(
       status: errors.isEmpty
           ? RecitationStatus.correct
@@ -63,7 +61,9 @@ class RecitationEngine {
       recognizedText: recognizedText,
       expectedText: expectedText,
       confidence: result.confidence,
-      errorMessage: errors.isEmpty ? null : _buildErrorMessage(errors),
+      errorMessage: errors.isEmpty
+          ? null
+          : _buildErrorMessage(errors),
     );
   }
 

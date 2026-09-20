@@ -4,6 +4,7 @@ import '../../../models/ayah.dart';
 import '../../../models/recitation_result.dart';
 import '../../../services/audio/microphone_audio_packet_pipeline.dart';
 import '../../../services/recitation/recitation_audio_controller.dart';
+import '../../../services/recitation/recitation_ayah_navigator.dart';
 import '../../../services/recitation/recitation_position.dart';
 import '../../../services/recitation/recitation_position_coordinator.dart';
 import '../../../services/recitation/recitation_position_factory.dart';
@@ -14,6 +15,7 @@ class RecitationScreenController extends ChangeNotifier {
   final MicrophoneRecitationController microphoneController;
   final MicrophoneAudioPacketPipeline packetPipeline;
   final RecitationPositionCoordinator positionCoordinator;
+  final RecitationAyahNavigator ayahNavigator;
 
   Ayah? _currentAyah;
 
@@ -26,13 +28,16 @@ class RecitationScreenController extends ChangeNotifier {
     required this.microphoneController,
     MicrophoneAudioPacketPipeline? packetPipeline,
     RecitationPositionCoordinator? positionCoordinator,
+    RecitationAyahNavigator? ayahNavigator,
   })  : audioController =
             audioController ?? RecitationAudioController(),
         packetPipeline =
             packetPipeline ?? MicrophoneAudioPacketPipeline(),
         positionCoordinator =
             positionCoordinator ??
-                RecitationPositionFactory.createCoordinator();
+                RecitationPositionFactory.createCoordinator(),
+        ayahNavigator =
+            ayahNavigator ?? const RecitationAyahNavigator();
 
   Ayah? get currentAyah => _currentAyah;
 
@@ -146,8 +151,66 @@ class RecitationScreenController extends ChangeNotifier {
     positionCoordinator.updateFromResult(_result);
 
     if (_result.status == RecitationStatus.correct) {
-      positionCoordinator.advanceAfterCorrect(_result);
+      await _moveToNextAyah();
     }
+
+    notifyListeners();
+  }
+
+  Future<void> _moveToNextAyah() async {
+    final currentAyah = _currentAyah;
+
+    if (currentAyah == null) {
+      return;
+    }
+
+    final nextAyah =
+        await ayahNavigator.getNextAyah(currentAyah);
+
+    if (nextAyah == null) {
+      return;
+    }
+
+    _currentAyah = nextAyah;
+    positionCoordinator.start(nextAyah);
+
+    _result = RecitationResult(
+      status: RecitationStatus.completed,
+      surahNumber: nextAyah.surahNumber,
+      ayahNumber: nextAyah.ayahNumber,
+      expectedText: nextAyah.text,
+      confidence: 1.0,
+    );
+  }
+
+  Future<void> moveToNextAyah() async {
+    await _moveToNextAyah();
+    notifyListeners();
+  }
+
+  Future<void> moveToPreviousAyah() async {
+    final currentAyah = _currentAyah;
+
+    if (currentAyah == null) {
+      return;
+    }
+
+    final previousAyah =
+        await ayahNavigator.getPreviousAyah(currentAyah);
+
+    if (previousAyah == null) {
+      return;
+    }
+
+    _currentAyah = previousAyah;
+    positionCoordinator.start(previousAyah);
+
+    _result = RecitationResult(
+      status: RecitationStatus.idle,
+      surahNumber: previousAyah.surahNumber,
+      ayahNumber: previousAyah.ayahNumber,
+      expectedText: previousAyah.text,
+    );
 
     notifyListeners();
   }
@@ -180,4 +243,15 @@ class RecitationScreenController extends ChangeNotifier {
       return;
     }
 
-    positionCoordinator.start(ayah
+    positionCoordinator.start(ayah);
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    microphoneController.dispose();
+    audioController.dispose();
+    packetPipeline.clear();
+    super.dispose();
+  }
+}

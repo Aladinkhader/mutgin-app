@@ -25,9 +25,13 @@ class WhisperModelDownloader {
       '${modelDirectory.path}/${config.modelFileName}',
     );
 
-    if (await modelFile.exists() && await modelFile.length() > 1024 * 1024) {
+    if (await _isValidExistingFile(modelFile)) {
       return modelFile;
     }
+
+    final temporaryFile = File(
+      '${modelFile.path}.download',
+    );
 
     final uri = Uri.parse(
       '${config.modelUrl}/resolve/main/${config.modelFileName}?download=true',
@@ -37,6 +41,7 @@ class WhisperModelDownloader {
 
     try {
       final request = await client.getUrl(uri);
+
       request.headers.set(
         HttpHeaders.acceptHeader,
         'application/octet-stream',
@@ -54,14 +59,21 @@ class WhisperModelDownloader {
       final totalBytes = response.contentLength;
       var receivedBytes = 0;
 
-      final sink = modelFile.openWrite();
+      if (await temporaryFile.exists()) {
+        await temporaryFile.delete();
+      }
+
+      final sink = temporaryFile.openWrite();
 
       try {
         await for (final chunk in response) {
           sink.add(chunk);
           receivedBytes += chunk.length;
 
-          onProgress?.call(receivedBytes, totalBytes);
+          onProgress?.call(
+            receivedBytes,
+            totalBytes,
+          );
         }
 
         await sink.flush();
@@ -69,25 +81,41 @@ class WhisperModelDownloader {
         await sink.close();
       }
 
-      final downloadedSize = await modelFile.length();
-
-      if (downloadedSize < 1024 * 1024) {
-        await modelFile.delete();
+      if (!await _isValidExistingFile(temporaryFile)) {
+        if (await temporaryFile.exists()) {
+          await temporaryFile.delete();
+        }
 
         throw const FileSystemException(
           'تم تنزيل ملف نموذج غير صالح أو غير مكتمل.',
         );
       }
 
-      return modelFile;
-    } catch (_) {
       if (await modelFile.exists()) {
         await modelFile.delete();
+      }
+
+      await temporaryFile.rename(modelFile.path);
+
+      return modelFile;
+    } catch (_) {
+      if (await temporaryFile.exists()) {
+        await temporaryFile.delete();
       }
 
       rethrow;
     } finally {
       client.close(force: true);
     }
+  }
+
+  Future<bool> _isValidExistingFile(File file) async {
+    if (!await file.exists()) {
+      return false;
+    }
+
+    final size = await file.length();
+
+    return size > 1024 * 1024;
   }
 }

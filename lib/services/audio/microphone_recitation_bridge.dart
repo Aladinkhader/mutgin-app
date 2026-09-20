@@ -25,6 +25,7 @@ class MicrophoneRecitationBridge {
 
   Future<void> stop() async {
     await microphone.stopListening();
+    await cancelListening();
   }
 
   void listen(
@@ -32,7 +33,10 @@ class MicrophoneRecitationBridge {
   ) {
     _subscription?.cancel();
 
-    _subscription = microphone.audioStream.listen(onAudio);
+    _subscription = microphone.audioStream.listen(
+      onAudio,
+      onError: (_) {},
+    );
   }
 
   Future<void> cancelListening() async {

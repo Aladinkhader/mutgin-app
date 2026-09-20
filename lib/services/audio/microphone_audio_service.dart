@@ -53,10 +53,6 @@ class MicrophoneAudioService implements AudioService {
     }
 
     try {
-      await _methodChannel.invokeMethod<void>(
-        'startRecording',
-      );
-
       _nativeSubscription?.cancel();
 
       _nativeSubscription = _eventChannel
@@ -68,12 +64,26 @@ class MicrophoneAudioService implements AudioService {
         },
       );
 
+      await _methodChannel.invokeMethod<void>(
+        'startRecording',
+      );
+
       _isListening = true;
     } on PlatformException catch (error) {
+      await _nativeSubscription?.cancel();
+      _nativeSubscription = null;
       _isListening = false;
 
       throw StateError(
         error.message ?? 'تعذر بدء تسجيل الصوت.',
+      );
+    } catch (error) {
+      await _nativeSubscription?.cancel();
+      _nativeSubscription = null;
+      _isListening = false;
+
+      throw StateError(
+        error.toString(),
       );
     }
   }

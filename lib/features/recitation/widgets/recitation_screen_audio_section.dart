@@ -5,6 +5,7 @@ import '../../../models/recitation_result.dart';
 import '../controllers/recitation_screen_controller.dart';
 import 'recitation_audio_controls.dart';
 import 'recitation_audio_result_view.dart';
+import 'recitation_microphone_error.dart';
 import 'recitation_recording_indicator.dart';
 
 class RecitationScreenAudioSection extends StatelessWidget {
@@ -23,6 +24,11 @@ class RecitationScreenAudioSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            RecitationMicrophoneError(
+              message: controller.microphoneError,
+            ),
+            if (controller.microphoneError != null)
+              const SizedBox(height: AppSpacing.md),
             Align(
               alignment: Alignment.center,
               child: RecitationRecordingIndicator(
@@ -37,10 +43,13 @@ class RecitationScreenAudioSection extends StatelessWidget {
               onStart: controller.start,
               onStop: controller.isProcessing
                   ? null
-                  : () => controller.stop(),
+                  : controller.stop,
               onCancel: controller.cancel,
             ),
-            if (controller.result.status != RecitationStatus.idle) ...[
+            if (controller.result.status !=
+                    RecitationStatus.idle &&
+                controller.result.status !=
+                    RecitationStatus.listening) ...[
               const SizedBox(height: AppSpacing.md),
               RecitationAudioResultView(
                 result: controller.result,

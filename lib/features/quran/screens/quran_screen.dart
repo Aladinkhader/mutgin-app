@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/surah.dart';
 import '../../../services/quran/local_quran_service.dart';
+import 'mushaf_screen.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -39,6 +40,14 @@ class _QuranScreenState extends State<QuranScreen> {
     });
   }
 
+  void _openMushaf() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const MushafScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +70,7 @@ class _QuranScreenState extends State<QuranScreen> {
 
                 return _SurahCard(
                   surah: surah,
-                  onTap: () {},
+                  onTap: _openMushaf,
                 );
               },
             ),

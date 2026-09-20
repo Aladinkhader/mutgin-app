@@ -15,10 +15,6 @@ abstract final class RecitationAudioFactory {
   }
 
   static RecitationAudioController createMockController() {
-    return createController(
-      engine: RecitationEngine(
-        aiEngine: MockAiEngine(),
-      ),
-    );
+    return createController();
   }
 }

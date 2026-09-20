@@ -84,11 +84,17 @@ class RecitationScreenController extends ChangeNotifier {
 
     packetPipeline.clear();
 
+    // Start the audio session before opening the microphone.
+    // This prevents the first microphone packets from being ignored.
+    audioController.start();
+
     final started = await microphoneController.start(
       onAudio: addAudio,
     );
 
     if (!started) {
+      audioController.cancel();
+
       _result = RecitationResult(
         status: RecitationStatus.processing,
         surahNumber: ayah.surahNumber,
@@ -102,8 +108,6 @@ class RecitationScreenController extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
-    audioController.start();
 
     _result = RecitationResult(
       status: RecitationStatus.listening,

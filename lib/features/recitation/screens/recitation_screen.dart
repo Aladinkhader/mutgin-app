@@ -10,6 +10,7 @@ import '../../../services/recitation/recitation_session_state.dart';
 import '../controllers/recitation_controller_factory.dart';
 import '../controllers/recitation_screen_controller.dart';
 import '../controllers/recitation_screen_controller_factory.dart';
+import '../controllers/recitation_session_controller.dart';
 import '../widgets/recitation_audio_section.dart';
 import '../widgets/recitation_session_actions.dart';
 import '../widgets/recitation_session_panel.dart';

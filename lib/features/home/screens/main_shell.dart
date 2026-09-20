@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../memorization/screens/memorization_screen.dart';
+import '../../quran/screens/quran_screen.dart';
+import '../../settings/screens/settings_screen.dart';
 import 'home_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -14,11 +17,11 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomeScreen(),
-    _QuranPlaceholder(),
-    _MemorizationPlaceholder(),
-    _SettingsPlaceholder(),
+  late final List<Widget> _pages = [
+    const HomeScreen(),
+    const QuranScreen(),
+    const MemorizationScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -37,6 +40,11 @@ class _MainShellState extends State<MainShell> {
         },
         backgroundColor: AppColors.surface,
         indicatorColor: AppColors.emerald.withValues(alpha: 0.28),
+        labelTextStyle: WidgetStatePropertyAll(
+          AppTextStyles.caption.copyWith(
+            color: AppColors.textPrimary,
+          ),
+        ),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -57,73 +65,6 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings_rounded),
             label: 'الإعدادات',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuranPlaceholder extends StatelessWidget {
-  const _QuranPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _PlaceholderPage(
-      icon: Icons.menu_book_rounded,
-      title: 'القرآن الكريم',
-    );
-  }
-}
-
-class _MemorizationPlaceholder extends StatelessWidget {
-  const _MemorizationPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _PlaceholderPage(
-      icon: Icons.auto_stories_rounded,
-      title: 'الحفظ والمراجعة',
-    );
-  }
-}
-
-class _SettingsPlaceholder extends StatelessWidget {
-  const _SettingsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _PlaceholderPage(
-      icon: Icons.settings_rounded,
-      title: 'الإعدادات',
-    );
-  }
-}
-
-class _PlaceholderPage extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
-  const _PlaceholderPage({
-    required this.icon,
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 48,
-            color: AppColors.gold,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: AppTextStyles.headline,
           ),
         ],
       ),

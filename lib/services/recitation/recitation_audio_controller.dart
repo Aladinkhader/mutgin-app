@@ -1,30 +1,102 @@
-import 'recitation_audio_result.dart';
-import 'recitation_audio_session.dart';
+import '../../models/recitation_result.dart';
+import 'recitation_audio_factory.dart';
+import 'recitation_audio_pipeline.dart';
 
 class RecitationAudioController {
-  final RecitationAudioSession session;
+  final RecitationAudioPipeline pipeline;
+
+  RecitationResult _result = const RecitationResult(
+    status: RecitationStatus.idle,
+  );
+
+  bool _isProcessing = false;
 
   RecitationAudioController({
-    RecitationAudioSession? session,
-  }) : session = session ?? RecitationAudioSession();
+    RecitationAudioPipeline? pipeline,
+  }) : pipeline =
+            pipeline ?? RecitationAudioFactory.createMockPipeline();
 
-  bool get isActive => session.isActive;
+  RecitationResult get result => _result;
 
-  Duration get duration => session.duration;
+  bool get isActive => pipeline.audioController.isActive;
+
+  bool get isRecording => isActive;
+
+  bool get isProcessing => _isProcessing;
+
+  Duration get duration => pipeline.audioController.duration;
 
   void start() {
-    session.start();
+    if (isActive || _isProcessing) {
+      return;
+    }
+
+    _result = const RecitationResult(
+      status: RecitationStatus.listening,
+    );
+
+    pipeline.start();
   }
 
   void addAudio(List<int> audioData) {
-    session.addAudio(audioData);
+    if (!isActive || _isProcessing) {
+      return;
+    }
+
+    pipeline.addAudio(audioData);
   }
 
-  RecitationAudioResult? stop() {
-    return session.finish();
+  Future<void> stop({
+    required String expectedText,
+    required int surahNumber,
+    required int ayahNumber,
+  }) async {
+    if (!isActive || _isProcessing) {
+      return;
+    }
+
+    _isProcessing = true;
+
+    _result = RecitationResult(
+      status: RecitationStatus.processing,
+      surahNumber: surahNumber,
+      ayahNumber: ayahNumber,
+      expectedText: expectedText,
+    );
+
+    try {
+      _result = await pipeline.stopAndProcess(
+        expectedText: expectedText,
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
+      );
+    } catch (_) {
+      _result = RecitationResult(
+        status: RecitationStatus.processing,
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
+        expectedText: expectedText,
+        errorMessage: 'حدث خطأ أثناء تحليل التسجيل.',
+      );
+    } finally {
+      _isProcessing = false;
+    }
   }
 
   void cancel() {
-    session.cancel();
+    pipeline.cancel();
+    _isProcessing = false;
+
+    _result = const RecitationResult(
+      status: RecitationStatus.idle,
+    );
+  }
+
+  void reset() {
+    cancel();
+  }
+
+  void dispose() {
+    pipeline.cancel();
   }
 }

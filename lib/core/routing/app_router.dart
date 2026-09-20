@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../../features/home/screens/main_shell.dart';
 import '../../features/quran/screens/mushaf_screen.dart';
 import '../../features/memorization/screens/memorization_screen.dart';
+import '../../features/recitation/screens/recitation_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
+import '../../models/ayah.dart';
 import 'app_routes.dart';
 
 abstract final class AppRouter {
@@ -26,10 +28,18 @@ abstract final class AppRouter {
         return _page(const SettingsScreen());
 
       case AppRoutes.recitation:
+        final ayah = settings.arguments;
+
+        if (ayah is Ayah) {
+          return _page(
+            RecitationScreen(ayah: ayah),
+          );
+        }
+
         return _page(
           const Scaffold(
             body: Center(
-              child: Text('التسميع'),
+              child: Text('لم يتم تحديد الآية'),
             ),
           ),
         );

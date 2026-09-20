@@ -17,12 +17,21 @@ class MockAiEngine implements AiEngine {
     required List<int> audioData,
   }) async {
     if (!_isInitialized) {
-      throw StateError('AI engine is not initialized.');
+      await initialize();
+    }
+
+    if (audioData.isEmpty) {
+      return const RecitationResult(
+        status: RecitationStatus.processing,
+        confidence: 0.0,
+        errorMessage: 'لم يتم استلام تسجيل صوتي.',
+      );
     }
 
     return const RecitationResult(
       status: RecitationStatus.processing,
       confidence: 0.0,
+      errorMessage: 'محرك التعرف الصوتي الحقيقي لم يتم ربطه بعد.',
     );
   }
 

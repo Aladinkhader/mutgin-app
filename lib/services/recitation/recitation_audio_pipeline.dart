@@ -1,17 +1,14 @@
 import '../../models/recitation_result.dart';
 import '../ai/recitation_engine.dart';
-import 'recitation_audio_controller.dart';
 import 'recitation_audio_processor.dart';
 import 'recitation_audio_session.dart';
 
 class RecitationAudioPipeline {
-  final RecitationAudioController audioController;
   final RecitationAudioProcessor processor;
   final RecitationEngine engine;
   final RecitationAudioSession session;
 
   const RecitationAudioPipeline({
-    required this.audioController,
     required this.processor,
     required this.engine,
     required this.session,
@@ -46,8 +43,7 @@ class RecitationAudioPipeline {
         surahNumber: surahNumber,
         ayahNumber: ayahNumber,
         expectedText: expectedText,
-        errorMessage:
-            'لم يتم تسجيل مقطع صوتي صالح للتحليل.',
+        errorMessage: 'لم يتم تسجيل صوت صالح للتحليل.',
       );
     }
 
@@ -59,8 +55,7 @@ class RecitationAudioPipeline {
         surahNumber: surahNumber,
         ayahNumber: ayahNumber,
         expectedText: expectedText,
-        errorMessage:
-            'تعذر تجهيز التسجيل الصوتي للتحليل.',
+        errorMessage: 'التسجيل الصوتي غير صالح للتحليل.',
       );
     }
 

@@ -51,12 +51,28 @@ class _RecitationScreenState extends State<RecitationScreen> {
   }
 
   void _onChanged() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) {
+      return;
     }
+
+    setState(() {
+      final currentAyah = _audioController.currentAyah;
+
+      if (currentAyah != null &&
+          currentAyah != _sessionController.currentAyah) {
+        _sessionController.start(currentAyah);
+      }
+    });
   }
 
   Future<void> _startListening() async {
+    final currentAyah =
+        _audioController.currentAyah ?? widget.ayah;
+
+    if (_sessionController.currentAyah != currentAyah) {
+      _sessionController.start(currentAyah);
+    }
+
     _sessionController.startListening();
     await _audioController.start();
   }
@@ -68,26 +84,30 @@ class _RecitationScreenState extends State<RecitationScreen> {
       return;
     }
 
-    final result = _audioController.result;
+    final currentAyah = _audioController.currentAyah;
 
-    if (result.status == RecitationStatus.correct ||
-        result.status == RecitationStatus.mistake) {
-      return;
+    if (currentAyah != null &&
+        currentAyah != _sessionController.currentAyah) {
+      _sessionController.start(currentAyah);
     }
-
-    _sessionController.reset();
-    _sessionController.start(widget.ayah);
   }
 
   Future<void> _resetSession() async {
     await _audioController.cancel();
 
     _sessionController.reset();
-    _sessionController.start(widget.ayah);
+
+    final currentAyah =
+        _audioController.currentAyah ?? widget.ayah;
+
+    _audioController.setAyah(currentAyah);
+    _sessionController.start(currentAyah);
   }
 
   RecitationResult _buildStatusResult() {
-    final currentAyah = _sessionController.currentAyah;
+    final currentAyah =
+        _audioController.currentAyah ??
+        _sessionController.currentAyah;
 
     if (currentAyah == null) {
       return const RecitationResult(
@@ -104,7 +124,8 @@ class _RecitationScreenState extends State<RecitationScreen> {
     final status = _sessionController.state;
 
     final recitationStatus = switch (status) {
-      RecitationSessionState.idle => RecitationStatus.idle,
+      RecitationSessionState.idle =>
+        RecitationStatus.idle,
       RecitationSessionState.preparing =>
         RecitationStatus.processing,
       RecitationSessionState.listening =>
@@ -139,6 +160,11 @@ class _RecitationScreenState extends State<RecitationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentAyah =
+        _audioController.currentAyah ??
+        _sessionController.currentAyah ??
+        widget.ayah;
+
     final state = _sessionController.state;
 
     final isListening =
@@ -178,9 +204,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                         CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        position == null
-                            ? 'الآية ${widget.ayah.ayahNumber}'
-                            : 'الآية ${position.ayahNumber}',
+                        'الآية ${currentAyah.ayahNumber}',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.title,
                       ),
@@ -193,7 +217,7 @@ class _RecitationScreenState extends State<RecitationScreen> {
                         ),
                       const SizedBox(height: AppSpacing.lg),
                       _AyahCard(
-                        ayah: widget.ayah,
+                        ayah: currentAyah,
                         isActive: isListening,
                         showText: _showText,
                         positionAyahNumber:
@@ -262,7 +286,8 @@ class _AyahCard extends StatelessWidget {
         color: isActive || isPositioned
             ? AppColors.emerald.withValues(alpha: 0.14)
             : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderRadius:
+            BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: isActive || isPositioned
               ? AppColors.gold.withValues(alpha: 0.45)
@@ -276,7 +301,8 @@ class _AyahCard extends StatelessWidget {
             height: 42,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.gold.withValues(alpha: 0.10),
+              color:
+                  AppColors.gold.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Text(

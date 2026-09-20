@@ -47,6 +47,28 @@ class RecitationSessionController extends ChangeNotifier {
     return result;
   }
 
+  void updateFromResult(RecitationResult result) {
+    final ayah = manager.currentAyah;
+
+    if (ayah == null) {
+      return;
+    }
+
+    final recognizedText = result.recognizedText;
+
+    if (recognizedText == null ||
+        recognizedText.trim().isEmpty) {
+      return;
+    }
+
+    manager.analyze(
+      recognizedText: recognizedText,
+      confidence: result.confidence,
+    );
+
+    notifyListeners();
+  }
+
   void reset() {
     manager.reset();
     notifyListeners();

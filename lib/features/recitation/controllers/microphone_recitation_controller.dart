@@ -42,11 +42,11 @@ class MicrophoneRecitationController extends ChangeNotifier {
         return false;
       }
 
-      await bridge.start();
-
       if (onAudio != null) {
         collector.start(onAudio);
       }
+
+      await bridge.start();
 
       _isListening = true;
       notifyListeners();
@@ -54,6 +54,15 @@ class MicrophoneRecitationController extends ChangeNotifier {
       return true;
     } catch (_) {
       _isListening = false;
+
+      try {
+        await collector.stop();
+      } catch (_) {}
+
+      try {
+        await bridge.stop();
+      } catch (_) {}
+
       _errorMessage = 'تعذر بدء تسجيل الصوت.';
       notifyListeners();
 
@@ -67,9 +76,9 @@ class MicrophoneRecitationController extends ChangeNotifier {
     }
 
     try {
-      await collector.stop();
       await bridge.stop();
     } finally {
+      await collector.stop();
       _isListening = false;
       notifyListeners();
     }
@@ -77,8 +86,13 @@ class MicrophoneRecitationController extends ChangeNotifier {
 
   Future<void> cancel() async {
     try {
-      await collector.stop();
       await bridge.stop();
+    } catch (_) {
+      // Keep the controller in a stopped state.
+    }
+
+    try {
+      await collector.stop();
     } catch (_) {
       // Keep the controller in a stopped state.
     }

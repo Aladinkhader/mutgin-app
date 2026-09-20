@@ -61,7 +61,9 @@ class WhisperEngine implements AiEngine {
     required List<int> audioData,
   }) async {
     try {
-      if (!_isInitialized || _controller == null || _modelPath == null) {
+      if (!_isInitialized ||
+          _controller == null ||
+          _modelPath == null) {
         await initialize();
       }
 
@@ -85,7 +87,8 @@ class WhisperEngine implements AiEngine {
 
       final session = await _controller!.transcribeLive(
         modelPath: _modelPath!,
-        pcm16Stream: Stream<Uint8List>.value(pcmBytes),
+        pcm16Stream:
+            Stream<Uint8List>.value(pcmBytes),
         lang: 'ar',
         initialPrompt:
             'القرآن الكريم، تلاوة عربية فصيحة، آيات القرآن الكريم.',
@@ -104,7 +107,7 @@ class WhisperEngine implements AiEngine {
       }
 
       return RecitationResult(
-        status: RecitationStatus.correct,
+        status: RecitationStatus.processing,
         recognizedText: text,
         confidence: 1.0,
       );
@@ -112,7 +115,8 @@ class WhisperEngine implements AiEngine {
       return RecitationResult(
         status: RecitationStatus.processing,
         confidence: 0.0,
-        errorMessage: 'تعذر تشغيل محرك Whisper: $error',
+        errorMessage:
+            'تعذر تشغيل محرك Whisper: $error',
       );
     }
   }

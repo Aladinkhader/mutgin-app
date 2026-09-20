@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'core/routing/app_router.dart';
+import 'core/routing/app_routes.dart';
 import 'core/theme/app_theme.dart';
 
 class MutqinApp extends StatelessWidget {
@@ -11,17 +13,8 @@ class MutqinApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'متقن',
       theme: AppTheme.dark(),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'متقن',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
+      initialRoute: AppRoutes.splash,
+      onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }
 }

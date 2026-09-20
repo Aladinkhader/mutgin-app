@@ -15,10 +15,12 @@ class WhisperModelConfig {
     this.maxAudioSeconds = 30,
   });
 
+  /// نموذج Whisper العربي المخصص للقرآن من Tarteel
+  /// بصيغة GGML المتوافقة مع whisper.cpp.
   static const quranArabicBase = WhisperModelConfig(
-    modelName: 'whisper-base-ar-quran',
+    modelName: 'ggml-whisper-base-ar-quran-q8_0',
     modelUrl:
-        'https://huggingface.co/tarteel-ai/whisper-base-ar-quran',
+        'https://huggingface.co/Alfatih/whisper-base-ar-quran-ggml',
   );
 
   int get maxAudioBytes =>

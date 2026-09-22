@@ -13,6 +13,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   permission_handler: ^12.0.3
+  permission_handler_android: 13.0.1
   path_provider: ^2.1.5
   whisper_ggml: ^2.6.0
   quran_data_dart: ^1.7.1

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -66,8 +65,6 @@ class MicrophoneAudioService implements AudioService {
         },
       );
 
-      // Mark listening before starting the native recorder.
-      // This prevents the first audio packets from being ignored.
       _isListening = true;
 
       await _methodChannel.invokeMethod<void>(
@@ -75,7 +72,6 @@ class MicrophoneAudioService implements AudioService {
       );
     } on PlatformException catch (error) {
       _isListening = false;
-
       await _nativeSubscription?.cancel();
       _nativeSubscription = null;
 
@@ -84,7 +80,6 @@ class MicrophoneAudioService implements AudioService {
       );
     } catch (error) {
       _isListening = false;
-
       await _nativeSubscription?.cancel();
       _nativeSubscription = null;
 
@@ -114,13 +109,6 @@ class MicrophoneAudioService implements AudioService {
 
   void _handleNativeAudio(dynamic data) {
     if (!_isListening || data == null) {
-      return;
-    }
-
-    if (data is Uint8List) {
-      _audioController.add(
-        List<int>.from(data),
-      );
       return;
     }
 

@@ -33,8 +33,11 @@ jobs:
       - name: Analyze project
         run: flutter analyze
 
+      - name: Show Flutter dependency tree
+        run: flutter pub deps --style=compact
+
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release -v
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

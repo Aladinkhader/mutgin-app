@@ -1,4 +1,3 @@
-import 'microphone_audio_packet.dart';
 import 'microphone_audio_packet_buffer.dart';
 import 'microphone_audio_packet_converter.dart';
 import 'microphone_audio_packet_validator.dart';

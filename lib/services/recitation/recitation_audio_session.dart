@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'recitation_audio_buffer.dart';
 import 'recitation_audio_config.dart';
 import 'recitation_audio_result.dart';

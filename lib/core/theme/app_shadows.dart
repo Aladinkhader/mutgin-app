@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 abstract final class AppShadows {
   static const List<BoxShadow> card = [
     BoxShadow(

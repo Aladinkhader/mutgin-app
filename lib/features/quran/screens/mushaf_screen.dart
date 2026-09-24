@@ -23,6 +23,7 @@ class _MushafScreenState extends State<MushafScreen> {
   int _currentPage = 1;
   List<Ayah> _ayahs = const [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -31,16 +32,36 @@ class _MushafScreenState extends State<MushafScreen> {
   }
 
   Future<void> _loadPage() async {
-    final ayahs = await _quranService.getSurahAyahs(1);
-
-    if (!mounted) {
-      return;
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
     }
 
-    setState(() {
-      _ayahs = ayahs;
-      _isLoading = false;
-    });
+    try {
+      final ayahs = await _quranService.getSurahAyahs(1);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _ayahs = ayahs;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _ayahs = const [];
+        _isLoading = false;
+        _errorMessage = 'تعذر تحميل القرآن الكريم.';
+      });
+    }
   }
 
   void _goToPreviousPage() {
@@ -95,28 +116,7 @@ class _MushafScreenState extends State<MushafScreen> {
             Expanded(
               child: Padding(
                 padding: AppSpacing.screenPadding,
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.gold,
-                        ),
-                      )
-                    : PageView.builder(
-                        controller: _pageController,
-                        itemCount: AppConstants.totalPages,
-                        onPageChanged: (page) {
-                          setState(() {
-                            _currentPage = page + 1;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          return MushafPage(
-                            pageNumber: index + 1,
-                            surahName: index == 0 ? 'الفاتحة' : null,
-                            ayahs: index == 0 ? _ayahs : const [],
-                          );
-                        },
-                      ),
+                child: _buildContent(),
               ),
             ),
             _PageControls(
@@ -128,6 +128,60 @@ class _MushafScreenState extends State<MushafScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.gold,
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 52,
+              color: AppColors.gold,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.subtitle,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ElevatedButton.icon(
+              onPressed: _loadPage,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: AppConstants.totalPages,
+      onPageChanged: (page) {
+        setState(() {
+          _currentPage = page + 1;
+        });
+      },
+      itemBuilder: (context, index) {
+        return MushafPage(
+          pageNumber: index + 1,
+          surahName: index == 0 ? 'الفاتحة' : null,
+          ayahs: index == 0 ? _ayahs : const [],
+        );
+      },
     );
   }
 }

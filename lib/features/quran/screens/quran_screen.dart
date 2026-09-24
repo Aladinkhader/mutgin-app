@@ -20,6 +20,7 @@ class _QuranScreenState extends State<QuranScreen> {
 
   List<Surah> _surahs = const [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -28,16 +29,36 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Future<void> _loadSurahs() async {
-    final surahs = await _quranService.getSurahs();
-
-    if (!mounted) {
-      return;
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
     }
 
-    setState(() {
-      _surahs = surahs;
-      _isLoading = false;
-    });
+    try {
+      final surahs = await _quranService.getSurahs();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _surahs = surahs;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _surahs = const [];
+        _isLoading = false;
+        _errorMessage = 'تعذر تحميل بيانات القرآن الكريم.';
+      });
+    }
   }
 
   void _openMushaf() {
@@ -54,26 +75,92 @@ class _QuranScreenState extends State<QuranScreen> {
       appBar: AppBar(
         title: const Text('القرآن الكريم'),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.gold,
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: AppSpacing.screenPadding,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 56,
                 color: AppColors.gold,
               ),
-            )
-          : ListView.separated(
-              padding: AppSpacing.screenPadding,
-              itemCount: _surahs.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (context, index) {
-                final surah = _surahs[index];
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.subtitle,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton.icon(
+                onPressed: _loadSurahs,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
-                return _SurahCard(
-                  surah: surah,
-                  onTap: _openMushaf,
-                );
-              },
-            ),
+    if (_surahs.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: AppSpacing.screenPadding,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.menu_book_rounded,
+                size: 56,
+                color: AppColors.gold,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'لا توجد بيانات للقرآن الكريم حالياً.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.subtitle,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton.icon(
+                onPressed: _loadSurahs,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: AppSpacing.screenPadding,
+      itemCount: _surahs.length,
+      separatorBuilder: (_, __) =>
+          const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (context, index) {
+        final surah = _surahs[index];
+
+        return _SurahCard(
+          surah: surah,
+          onTap: _openMushaf,
+        );
+      },
     );
   }
 }

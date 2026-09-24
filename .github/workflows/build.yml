@@ -84,43 +84,4 @@ jobs:
         with:
           name: mutqin-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Analyze project
-        run: flutter analyze
-
-      - name: Show Flutter dependency tree
-        run: flutter pub deps --style=compact
-
-      - name: Verify Android embedding
-        run: |
-          echo "========================================"
-          echo "GIT COMMIT"
-          echo "========================================"
-          git rev-parse HEAD
-
-          echo "========================================"
-          echo "ANDROID MANIFEST"
-          echo "========================================"
-          cat android/app/src/main/AndroidManifest.xml
-
-          echo "========================================"
-          echo "EMBEDDING CHECK"
-          echo "========================================"
-          grep -n 'flutterEmbedding\|android:value="2"\|android:name="${applicationName}"' \
-            android/app/src/main/AndroidManifest.xml
-
-          echo "========================================"
-          echo "FLUTTER VERSION"
-          echo "========================================"
-          flutter --version
-
-      - name: Build APK
-        run: flutter build apk --release -v
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: mutqin-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          overwrite: true

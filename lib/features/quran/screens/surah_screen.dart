@@ -26,7 +26,6 @@ class _SurahScreenState extends State<SurahScreen> {
 
   List<Ayah> _ayahs = const [];
   bool _isLoading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -35,38 +34,18 @@ class _SurahScreenState extends State<SurahScreen> {
   }
 
   Future<void> _loadAyahs() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
+    final ayahs = await _quranService.getSurahAyahs(
+      widget.surah.number,
+    );
+
+    if (!mounted) {
+      return;
     }
 
-    try {
-      final ayahs = await _quranService.getSurahAyahs(
-        widget.surah.number,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _ayahs = ayahs;
-        _isLoading = false;
-        _errorMessage = null;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _ayahs = const [];
-        _isLoading = false;
-        _errorMessage = 'تعذر تحميل آيات سورة ${widget.surah.arabicName}.';
-      });
-    }
+    setState(() {
+      _ayahs = ayahs;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -75,83 +54,41 @@ class _SurahScreenState extends State<SurahScreen> {
       appBar: AppBar(
         title: Text(widget.surah.arabicName),
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.gold,
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                size: 56,
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
                 color: AppColors.gold,
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.subtitle,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              ElevatedButton.icon(
-                onPressed: _loadAyahs,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('إعادة المحاولة'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+            )
+          : _ayahs.isEmpty
+              ? const Center(
+                  child: Text(
+                    'لا توجد آيات متاحة حالياً',
+                    style: AppTextStyles.bodySecondary,
+                  ),
+                )
+              : ListView.separated(
+                  padding: AppSpacing.screenPadding,
+                  itemCount: _ayahs.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.md),
+                  itemBuilder: (context, index) {
+                    final ayah = _ayahs[index];
 
-    if (_ayahs.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Text(
-            'لا توجد آيات متاحة حالياً.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodySecondary,
-          ),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: AppSpacing.screenPadding,
-      itemCount: _ayahs.length,
-      separatorBuilder: (_, __) =>
-          const SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) {
-        final ayah = _ayahs[index];
-
-        return _AyahCard(
-          ayah: ayah,
-          onRecitationPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => RecitationScreen(
-                  ayah: ayah,
+                    return _AyahCard(
+                      ayah: ayah,
+                      onRecitationPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => RecitationScreen(
+                              ayah: ayah,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
